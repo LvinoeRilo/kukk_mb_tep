@@ -237,7 +237,10 @@ class Update_mb:
                     curs = con.cursor()
                     cur_sz = f"Sz_N{db_time_date.day}_{self.watch}V"
                     cur_m = f"M_N{db_time_date.day}_{self.watch}V"
-                    for row in curs.execute('select * from table1').fetchall():
+                    for row in curs.execute(f'''select shifr, prizn, tzn, 
+                                            sz_hour, sz_hour_m, {cur_sz}, {cur_m} 
+                                            from table1''').fetchall():
+
                         if 'UROV' != row['Prizn']:
                             curs.execute(
                                 f'''update table1 set {cur_sz} =  {row[cur_sz] + row['sz_hour']} where shifr = '{row['Shifr']}' ''')
