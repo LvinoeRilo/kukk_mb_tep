@@ -8,11 +8,11 @@
         "table_name": "table1"
     },
     "lab_db": {
-        "driver": "db\\mb_kug_pptno_100_400.db",
+        "driver": "{SQL Server}",
         "server": "10.100.100.61",
-        "database": "mb_kug_pptno_100_400.db",
-        "uid": "sa",
-        "password": "google3519google"
+        "database": "mmpk",
+        "uid": "as-test",
+        "password": "test"
     },
     "tag_db": {
         "db_path": "C:\\prj\\db\\data.db",
