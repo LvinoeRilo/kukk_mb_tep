@@ -1,5 +1,6 @@
 import sqlite3
 from utilities import logger, timer_decorator, config
+from lab_analysis import LabAnalys
 from datetime import datetime, timedelta
 import shutil
 
@@ -63,10 +64,6 @@ class Update_mb:
         finally:
             logger.info('Значения вахт обнулены')
 
-    # обновление плотностей из базы данных лаборатории
-    def update_lab(self):
-        pass
-
     # обновление значений базы материального баланса
     def update_mb(self):
         try:
@@ -77,7 +74,9 @@ class Update_mb:
                 curs = con.cursor()
                 curs.execute(f'''select * from
                 {config["local_db"]['table_name']}''')
+
                 tag = self.find_tag
+
                 for r in curs.fetchall():
 
                     try:
@@ -227,9 +226,13 @@ class Update_mb:
         return all(map(lambda x: x != -99999, tags))
 
     # проверка смены часа
-    def hour_change(self, cur_time, zero_values=True):
+    def hour_change(self, cur_time, restore=False):
         db_time_date = self.last_datetime()
+        # обновление плотностей лаб.анализов
+
         if (db_time_date.hour != cur_time.hour) or (db_time_date.date() != cur_time.date()):
+            if not restore:
+                LabAnalys(config)
 
             try:
                 with sqlite3.connect(config['local_db']['db_path']) as con:
@@ -237,8 +240,9 @@ class Update_mb:
                     curs = con.cursor()
                     cur_sz = f"Sz_N{db_time_date.day}_{self.watch}V"
                     cur_m = f"M_N{db_time_date.day}_{self.watch}V"
-                    for row in curs.execute(f'''select shifr, prizn, tzn, 
-                                            sz_hour, sz_hour_m, {cur_sz}, {cur_m} 
+                    for row in curs.execute(f'''select shifr, prizn, tzn,
+                                            sz_hour, sz_hour_m, {
+                        cur_sz}, {cur_m}
                                             from table1''').fetchall():
 
                         if 'UROV' != row['Prizn']:
@@ -250,8 +254,9 @@ class Update_mb:
                             curs.execute(f'''update table1 set {cur_sz} = {row['tzn']}
                                         where Shifr = '{row['Shifr']}' ''')
 
-                    # Обнуление итератора и среднего часового значения если zero_values == True
-                    if zero_values:
+                    # Обнуление итератора и среднего часового значения если restore == False
+                    if not restore:
+
                         curs.execute(
                             '''update table1 set n = 0, Sz_hour = 0, Sz_hour_m = 0''')
 
@@ -343,7 +348,7 @@ class Update_mb:
                 self.watch = self.current_watch(last_date)
 
                 # методу hour_change передается zero_values = False во избежание обнуления средних значений
-                self.hour_change(cur_date, zero_values=False)
+                self.hour_change(cur_date, restore=True)
 
                 # проверка смены для и месяца
                 if (last_date + timedelta(hours=1)).day > last_date.day:
