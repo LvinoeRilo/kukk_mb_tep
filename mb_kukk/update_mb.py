@@ -231,6 +231,7 @@ class Update_mb:
         # обновление плотностей лаб.анализов
 
         if (db_time_date.hour != cur_time.hour) or (db_time_date.date() != cur_time.date()):
+
             if not restore:
                 LabAnalys(config)
 

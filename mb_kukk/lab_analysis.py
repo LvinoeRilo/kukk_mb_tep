@@ -32,27 +32,25 @@ class LabAnalys:
 
     def _fetch_lab_zn(self) -> None:
 
-        try:
-            auth = self.config['lab_db']
-            # строка аутентификации
-            sql_auth = ";".join([f"{k}={v}" for k, v in auth.items()])
+        auth = self.config['lab_db']
+        # строка аутентификации
+        sql_auth = ";".join([f"{k}={v}" for k, v in auth.items()])
 
-            with pyodbc.connect(sql_auth, readonly=True) as con:
-                curs = con.cursor()
+        with pyodbc.connect(sql_auth, readonly=True) as con:
+            print(sql_auth)
+            curs = con.cursor()
+            print(sql_auth)
 
-                for code in self.lab_codes:
-                    obkt, res, par = code.split(',')
-                    data = curs.execute(
-                        f'''select top 1 par_zn
+            for code in self.lab_codes:
+                obkt, res, par = code.split(',')
+                data = curs.execute(
+                    f'''select top 1 par_zn
                         from analyse_day
                         where (k_obkt = '{obkt}') and
                         (k_res = '{res}') and
                         (par_cod = '{par}') ''').fetchval()
-                    if data and data != 'None':
-                        self.lab_zn.update({code: float(data)})
+                if data and data != 'None':
+                    self.lab_zn.update({code: float(data)})
 
-        except Exception as er:
-            logger.error(er)
 
-        finally:
-            con.close()
+LabAnalys(config)
