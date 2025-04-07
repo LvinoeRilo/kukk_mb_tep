@@ -5,6 +5,8 @@ import time
 from functools import wraps
 import sqlite3
 
+import subprocess
+
 
 # Инициализация логгера
 logger.add("logs/state.log", rotation="1 MB",
@@ -82,6 +84,15 @@ class TagScanner:
         res['tags'] = tags
         with open('new.json', 'w', encoding='UTF-8') as file:
             json.dump(res, file, indent=4, ensure_ascii=False)
+
+
+# проверка доступности адреса аналог ping
+def check_ping(host: str) -> bool:
+    ping = subprocess.run(["ping", "-n", "1", host],
+                          stdout=subprocess.PIPE)
+    if not ping.returncode:
+        return True
+    return False
 
 
 # Конфиг файл

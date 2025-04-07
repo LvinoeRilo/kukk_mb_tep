@@ -1,4 +1,4 @@
-from utilities import logger, timer_decorator, config
+from utilities import logger, timer_decorator, config, check_ping
 import sqlite3
 import pyodbc
 
@@ -30,27 +30,45 @@ class LabAnalys:
         finally:
             con.close()
 
+    @timer_decorator
     def _fetch_lab_zn(self) -> None:
 
-        auth = self.config['lab_db']
-        # строка аутентификации
-        sql_auth = ";".join([f"{k}={v}" for k, v in auth.items()])
+        try:
 
-        with pyodbc.connect(sql_auth, readonly=True) as con:
-            print(sql_auth)
-            curs = con.cursor()
-            print(sql_auth)
+            auth = self.config['lab_db']
+            # строка аутентификации
+            sql_auth = ";".join([f"{k}={v}" for k, v in auth.items()])
 
-            for code in self.lab_codes:
-                obkt, res, par = code.split(',')
-                data = curs.execute(
-                    f'''select top 1 par_zn
+            # проверка доступности базы лаб.анализов
+            if not check_ping(config['lab_server']['db_lab']):
+                raise pyodbc.Error
+
+            with pyodbc.connect(sql_auth, readonly=True) as con:
+                curs = con.cursor()
+
+                for code in self.lab_codes:
+                    obkt, res, par = code.split(',')
+                    data = curs.execute(
+                        f'''select top 1 par_zn
                         from analyse_day
                         where (k_obkt = '{obkt}') and
                         (k_res = '{res}') and
                         (par_cod = '{par}') ''').fetchval()
-                if data and data != 'None':
-                    self.lab_zn.update({code: float(data)})
+                    if data and data != 'None':
+                        self.lab_zn.update({code: float(data)})
+
+        except pyodbc.Error as er:
+            logger.error(
+                "Ошибка подключания к базе Лаб.Анализов")
+
+        except Exception as er:
+            logger.error(er)
+
+        finally:
+            try:
+                con.close()
+            except:
+                pass
 
 
 LabAnalys(config)
